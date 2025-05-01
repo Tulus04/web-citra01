@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Quality Improvement with Flask</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Upload dan Perbaiki Kualitas Citra</h1>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="image/*" required>
+            <button type="submit">Upload</button>
+        </form>
+
+        {% if original_filename %}
+            <div class="image-container">
+                <div class="image-section">
+                    <h2>Gambar Asli:</h2>
+                    <img id="originalImage" src="{{ url_for('static', filename='uploads/' + original_filename) }}" 
+                         alt="Original Image" onclick="openModal(this.src)">
+                </div>
+                
+                <div class="controls">
+                    <button onclick="processImage('contrast')">Tingkatkan Kontras</button>
+                    <button onclick="processImage('noise')">Reduksi Noise</button>
+                    <button onclick="processImage('sharpen')">Penajaman</button>
+                </div>
+
+                <div class="image-section">
+                    <h2>Gambar Hasil Perbaikan:</h2>
+                    <div id="processedImageContainer">
+                        {% if processed_filename %}
+                            <img id="processedImage" src="{{ url_for('static', filename='uploads/' + processed_filename) }}" 
+                                 alt="Processed Image" onclick="openModal(this.src)">
+                        {% else %}
+                            <p>Pilih operasi untuk memproses gambar</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div id="myModal" class="modal" onclick="closeModal()">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modalImg">
+    </div>
+
+    <script>
+        let originalFilename = "{{ original_filename }}";  
+
+        function processImage(operation) {
+            const formData = new FormData();
+            formData.append('filename', originalFilename);
+            formData.append('operation', operation);
+
+            fetch('/process_image', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const processedImageContainer = document.getElementById('processedImageContainer');
+                processedImageContainer.innerHTML = `
+                    <img id="processedImage" 
+                         src="{{ url_for('static', filename='uploads/') }}${data.processed_filename}" 
+                         alt="Processed Image" 
+                         onclick="openModal(this.src)">
+                `;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function openModal(src) {
+            document.getElementById("modalImg").src = src;
+            document.getElementById("myModal").style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById("myModal").style.display = "none";
+        }
+    </script>
+</body>
+</html>
