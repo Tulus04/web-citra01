@@ -9,8 +9,19 @@
 <body>
     <div class="container">
         <h1>Upload dan Perbaiki Kualitas Citra</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <form action="/upload" method="post" enctype="multipart/form-data">
-            <input type="file" name="file" accept="image/*" required>
+            <input type="file" name="file" accept=".png,.jpg,.jpeg,.gif,.bmp,.tiff" required>
             <button type="submit">Upload</button>
         </form>
 

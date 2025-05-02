@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
 from PIL import Image, ImageEnhance, ImageFilter
 import cv2
 import os
@@ -6,6 +6,12 @@ import numpy as np
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads/'
+app.secret_key = 'your-secret-key'  # Tambahkan secret key untuk flash messages
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
 def index():
@@ -14,21 +20,36 @@ def index():
 @app.route('/upload', methods=['POST'])
 def upload():
     if 'file' not in request.files:
+        flash('Tidak ada file yang dipilih', 'error')
         return redirect(url_for('index'))
 
     file = request.files['file']
     if file.filename == '':
+        flash('Tidak ada file yang dipilih', 'error')
         return redirect(url_for('index'))
 
     if file and allowed_file(file.filename):
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-        file.save(filepath)
-        
-        return render_template('index.html', 
-                             original_filename=file.filename,
-                             processed_filename=None)
-
-    return redirect(url_for('index'))
+        try:
+            # Coba buka gambar untuk memastikan file valid
+            img = Image.open(file)
+            img.verify()  # Verifikasi file gambar
+            
+            # Reset pointer file
+            file.seek(0)
+            
+            # Simpan file
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+            file.save(filepath)
+            
+            return render_template('index.html', 
+                                original_filename=file.filename,
+                                processed_filename=None)
+        except Exception as e:
+            flash('File yang diupload bukan gambar yang valid', 'error')
+            return redirect(url_for('index'))
+    else:
+        flash('Format file tidak didukung. Gunakan format: ' + ', '.join(ALLOWED_EXTENSIONS), 'error')
+        return redirect(url_for('index'))
 
 @app.route('/process_image', methods=['POST'])
 def process_image():
@@ -64,10 +85,6 @@ def reduce_noise(img):
 
 def sharpen_image(img):
     return img.filter(ImageFilter.SHARPEN)
-
-def allowed_file(filename):
-    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 if __name__ == '__main__':
     app.run(debug=True)
