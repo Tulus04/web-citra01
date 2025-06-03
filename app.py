@@ -30,21 +30,18 @@ def upload():
 
     if file and allowed_file(file.filename):
         try:
-            # Coba buka gambar untuk memastikan file valid
             img = Image.open(file)
-            img.verify()  # Verifikasi file gambar
+            img.verify()
             
-            # Reset pointer file
             file.seek(0)
             
-            # Simpan file
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
             file.save(filepath)
             
             return render_template('index.html', 
                                 original_filename=file.filename,
                                 processed_filename=None)
-        except Exception as e:
+        except:
             flash('File yang diupload bukan gambar yang valid', 'error')
             return redirect(url_for('index'))
     else:
